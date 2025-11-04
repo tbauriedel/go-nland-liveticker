@@ -11,12 +11,15 @@ Found operations are stored in a SQLite database.
 
 Image is available on [Docker Hub](https://hub.docker.com/repository/docker/tbauriedel/go-nland-liveticker/general).
 
-Recommended volume for database:
-- /root/operations.db
+Recommended persistent docker volumes:
+- /root/go-nland-liveticker.log
+- Database file
 
 Environments:
-- TELEGRAM_BOT_ID:
-- TELEGRAM_CHAT_ID: 
+- LOG_LEVEL: logging level. "debug" or "info" (Default: "debug")
+- TELEGRAM_BOT_ID: ID of the telegram bot
+- TELEGRAM_CHAT_ID: ID of the telegram chat
+- DatabaseDSN: DSN for the sqlite database (Default: "operations.db")
 
 # LICENSE
 

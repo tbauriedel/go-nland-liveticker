@@ -15,15 +15,27 @@ import (
 	"github.com/tbauriedel/go-nland-liveticker/internal/telegram"
 )
 
+var logLevelMap = map[string]slog.Level{
+	"debug": slog.LevelDebug,
+	"info":  slog.LevelInfo,
+}
+
 func main() {
 	// Get config from environment. Defaults are applied in case variables are missing
 	conf := config.GetFromEnv()
 
+	logFile, err := os.OpenFile("go-nland-liveticker.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		panic(err)
+	}
+
 	// Init logger. We use debug by default
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	logger := slog.New(slog.NewTextHandler(logFile, &slog.HandlerOptions{Level: logLevelMap[conf.LogLevel]}))
+	logger.Info("Logger initialized")
 
 	logger.Info("Starting go-nland-liveticker")
 
+	logger.Debug("Initializing database")
 	// sqlite connection
 	db := database.NewSQLiteDatabase(conf.DatabaseDSN, logger)
 	if db.ConnectErr != nil {
@@ -31,12 +43,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	err := db.ImportSchema(context.Background())
+	err = db.ImportSchema(context.Background())
 	if err != nil {
 		logger.Error("cant import schema", "error", err)
 		os.Exit(1)
 	}
 
+	logger.Debug("Initialize Telegram bot instance")
 	// Telegram instance
 	bot, err := telegram.NewBotInstance(conf.TelegramBotId, logger)
 	if err != nil {
@@ -45,19 +58,21 @@ func main() {
 	}
 
 	// Init scraper
-	logger.Info("Creating scraper")
+	logger.Info("Initializing scraper")
 	s := scraper.NewScraper()
 	s.Collector.AllowURLRevisit = true
 
-	logger.Info("Registering scraper")
+	logger.Info("Registering scraper functions")
 	s.Register()
 
-	logger.Info("Starting endless scraper")
+	logger.Info("Starting endless scraper loop")
 
 	// endless loop
 	for {
+		logger.Debug("Starting new run in 5 seconds")
 		// Wait before scraping. Done here because of more than one continue in loop
 		time.Sleep(5 * time.Second)
+		logger.Debug("Starting run")
 
 		lastOperationFromScraper, err := s.ScrapeOperations()
 		if err != nil {
@@ -67,6 +82,8 @@ func main() {
 			continue
 		}
 
+		logger.Debug("Got last operation from scraper", "operation", lastOperationFromScraper.GetIdentifier())
+
 		// context for db select
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
@@ -74,18 +91,23 @@ func main() {
 		lastOperationFromDB, err := db.GetLastInsertedOperation(ctx)
 		if err != nil {
 			logger.Error("scraping failed", "error", err)
+			logger.Debug("Finished run. New run will start")
 			continue
 		}
+
+		logger.Debug("Got last operation from database", "operation", lastOperationFromDB.GetIdentifier())
 
 		if lastOperationFromDB == nil {
 			logger.Debug("No operation found in database yet")
 
 			handleOperation(bot, conf.TelegramChatId, lastOperationFromScraper, logger, db)
+			logger.Debug("Finished run. New run will start")
 			continue
 		}
-		
+
 		if lastOperationFromDB.GetIdentifier() == lastOperationFromScraper.GetIdentifier() {
-			logger.Debug("Latest found operation already in database", "operation", lastOperationFromScraper.GetIdentifier())
+			logger.Debug("Latest found operation already in database")
+			logger.Debug("Finished run. New run will start")
 			continue
 		}
 
@@ -93,6 +115,10 @@ func main() {
 
 		// Send new operation to telegram and insert into database
 		handleOperation(bot, conf.TelegramChatId, lastOperationFromScraper, logger, db)
+
+		lastOperationFromScraper = model.Operation{}
+
+		logger.Debug("Finished run. New run will start")
 	}
 }
 
@@ -102,7 +128,7 @@ func handleOperation(t telegram.Bot, chatID int64, o model.Operation, logger *sl
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					logger.Info(fmt.Sprintf("recovered from: %v\nWill wait 1 second before retry", r))
+					logger.Error(fmt.Sprintf("recovered from: %v\nWill wait 1 second before retry", r))
 					time.Sleep(1 * time.Second)
 				}
 			}()
@@ -129,7 +155,7 @@ func handleOperation(t telegram.Bot, chatID int64, o model.Operation, logger *sl
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					logger.Info(fmt.Sprintf("recovered from: %v\nWill wait 1 second before retry", r))
+					logger.Error(fmt.Sprintf("recovered from: %v\nWill wait 1 second before retry", r))
 					time.Sleep(1 * time.Second)
 				}
 			}()

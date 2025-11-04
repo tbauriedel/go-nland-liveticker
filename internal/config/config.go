@@ -6,6 +6,7 @@ import (
 )
 
 type Config struct {
+	LogLevel       string
 	TelegramBotId  string
 	TelegramChatId int64
 	DatabaseDSN    string
@@ -13,6 +14,7 @@ type Config struct {
 
 func getDefaults() Config {
 	return Config{
+		LogLevel:       "debug",
 		TelegramBotId:  "",
 		TelegramChatId: 0,
 		DatabaseDSN:    "operations.db",
@@ -21,6 +23,10 @@ func getDefaults() Config {
 
 func GetFromEnv() Config {
 	conf := getDefaults()
+
+	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
+		conf.LogLevel = logLevel
+	}
 
 	if botID := os.Getenv("TELEGRAM_BOT_ID"); botID != "" {
 		conf.TelegramBotId = botID

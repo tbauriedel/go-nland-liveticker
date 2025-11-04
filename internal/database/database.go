@@ -95,7 +95,7 @@ func (s *SQLDatabase) InsertOperation(ctx context.Context, operation *model.Oper
 		return fmt.Errorf("failed to insert operation: %w", err)
 	}
 
-	s.logger.Debug("Inserted operation", "operation", operation.GetIdentifier())
+	s.logger.Info("Inserted operation", "operation", operation.GetIdentifier())
 
 	return nil
 }

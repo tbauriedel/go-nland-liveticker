@@ -1,3 +1,4 @@
 .env
 operations.db
 .idea
+/go-nland-liveticker.log

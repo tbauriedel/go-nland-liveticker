@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"strings"
@@ -29,8 +30,10 @@ func main() {
 		panic(err)
 	}
 
+	writer := io.MultiWriter(os.Stdout, logFile)
+
 	// Init logger. We use debug by default
-	logger := slog.New(slog.NewTextHandler(logFile, &slog.HandlerOptions{Level: logLevelMap[conf.LogLevel]}))
+	logger := slog.New(slog.NewTextHandler(writer, &slog.HandlerOptions{Level: logLevelMap[conf.LogLevel]}))
 	logger.Info("Logger initialized")
 
 	logger.Info("Starting go-nland-liveticker")
@@ -95,8 +98,6 @@ func main() {
 			continue
 		}
 
-		logger.Debug("Got last operation from database", "operation", lastOperationFromDB.GetIdentifier())
-
 		if lastOperationFromDB == nil {
 			logger.Debug("No operation found in database yet")
 
@@ -104,6 +105,8 @@ func main() {
 			logger.Debug("Finished run. New run will start")
 			continue
 		}
+
+		logger.Debug("Got last operation from database", "operation", lastOperationFromDB.GetIdentifier())
 
 		if lastOperationFromDB.GetIdentifier() == lastOperationFromScraper.GetIdentifier() {
 			logger.Debug("Latest found operation already in database")

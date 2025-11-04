@@ -88,7 +88,7 @@ func (s *SQLDatabase) InsertOperation(ctx context.Context, operation *model.Oper
 
 	_, err := s.db.ExecContext(ctx,
 		query,
-		operation.Time.Format("02.01.2006 15:04"), operation.Units, operation.Report, operation.District, operation.Location,
+		operation.Time.Format("2006-01-02 15:04"), operation.Units, operation.Report, operation.District, operation.Location,
 	)
 
 	if err != nil {
@@ -101,7 +101,7 @@ func (s *SQLDatabase) InsertOperation(ctx context.Context, operation *model.Oper
 }
 
 func (s *SQLDatabase) GetLastInsertedOperation(ctx context.Context) (*model.Operation, error) {
-	query := s.db.Rebind("SELECT * FROM operations ORDER BY time ASC LIMIT 1")
+	query := s.db.Rebind("SELECT * FROM operations ORDER BY time DESC LIMIT 1")
 
 	var temp []struct {
 		Time     string `db:"time"`
@@ -120,7 +120,7 @@ func (s *SQLDatabase) GetLastInsertedOperation(ctx context.Context) (*model.Oper
 		return nil, nil
 	}
 
-	parsedTime, err := time.Parse("02.01.2006 15:04", temp[0].Time)
+	parsedTime, err := time.Parse("2006-01-02 15:04", temp[0].Time)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse time: %w (raw value: %s)", err, temp[0].Time)
 	}

@@ -83,9 +83,9 @@ func main() {
 			handleOperation(bot, conf.TelegramChatId, lastOperationFromScraper, logger, db)
 			continue
 		}
-
+		
 		if lastOperationFromDB.GetIdentifier() == lastOperationFromScraper.GetIdentifier() {
-			logger.Debug("Latest found operation already in database")
+			logger.Debug("Latest found operation already in database", "operation", lastOperationFromScraper.GetIdentifier())
 			continue
 		}
 

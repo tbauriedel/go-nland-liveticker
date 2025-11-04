@@ -41,6 +41,7 @@ func (s *Scraper) Register() {
 	s.Collector.OnHTML("table#operationList > tbody", func(HtmlElement *colly.HTMLElement) {
 		HtmlElement.ForEach("tr", func(_ int, element *colly.HTMLElement) {
 
+			// fmt.Println(element.ChildText("td:nth-child(1)")) // "03.11.2025 21:33"
 			t, _ := time.Parse("02.01.2006 15:04", element.ChildText("td:nth-child(1)"))
 
 			row := model.Operation{
@@ -98,6 +99,6 @@ func (s *Scraper) ScrapeOperations() (model.Operation, error) {
 
 	// Get the latest operation
 	o = s.FoundOperations[0]
-
+	
 	return o, nil
 }

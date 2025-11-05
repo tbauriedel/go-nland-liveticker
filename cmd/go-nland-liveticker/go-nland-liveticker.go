@@ -60,14 +60,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Init scraper
-	logger.Info("Initializing scraper")
-	s := scraper.NewScraper()
-	s.Collector.AllowURLRevisit = true
-
-	logger.Info("Registering scraper functions")
-	s.Register()
-
 	logger.Info("Starting endless scraper loop")
 
 	// endless loop
@@ -76,6 +68,11 @@ func main() {
 		// Wait before scraping. Done here because of more than one continue in loop
 		time.Sleep(5 * time.Second)
 		logger.Debug("Starting run")
+
+		s := scraper.NewScraper()
+		s.Collector.AllowURLRevisit = true
+
+		s.Register()
 
 		lastOperationFromScraper, err := s.ScrapeOperations()
 		if err != nil {

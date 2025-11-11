@@ -21,6 +21,8 @@ var logLevelMap = map[string]slog.Level{
 	"info":  slog.LevelInfo,
 }
 
+var lastSentOperation model.Operation
+
 func main() {
 	// Get config from environment. Defaults are applied in case variables are missing
 	conf := config.GetFromEnv()
@@ -95,6 +97,14 @@ func main() {
 			continue
 		}
 
+		// Check if lastSentOperation is the same as lastOperationFromScraper
+		if lastSentOperation == lastOperationFromScraper {
+			logger.Debug("Last scraped operation is the same as last sent operation. Waiting 5 seconds before new try")
+			time.Sleep(5 * time.Second)
+
+			continue
+		}
+
 		if lastOperationFromDB == nil {
 			logger.Debug("No operation found in database yet")
 
@@ -146,6 +156,7 @@ func handleOperation(t telegram.Bot, chatID int64, o model.Operation, logger *sl
 
 			sent = true
 
+			lastSentOperation = o
 			logger.Debug("Sent operation to telegram", "operation", o.GetIdentifier())
 		}()
 	}

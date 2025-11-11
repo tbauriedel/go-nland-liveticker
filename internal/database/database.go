@@ -101,7 +101,7 @@ func (s *SQLDatabase) InsertOperation(ctx context.Context, operation *model.Oper
 }
 
 func (s *SQLDatabase) GetLastInsertedOperation(ctx context.Context) (*model.Operation, error) {
-	query := s.db.Rebind("SELECT * FROM operations ORDER BY time DESC LIMIT 1")
+	query := s.db.Rebind("SELECT * FROM operations ORDER BY rowid DESC LIMIT 1;")
 
 	var temp []struct {
 		Time     string `db:"time"`

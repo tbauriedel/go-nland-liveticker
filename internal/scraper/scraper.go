@@ -23,7 +23,13 @@ func NewScraper() *Scraper {
 
 	s.Collector = colly.NewCollector(
 		colly.AllowedDomains("www.kfv-online.de"),
+		colly.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"),
 	)
+
+	s.Collector.OnRequest(func(r *colly.Request) {
+    	r.Headers.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+    	r.Headers.Set("Accept-Language", "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7")
+	})
 
 	s.Collector.OnError(func(r *colly.Response, err error) {
 		s.Err = fmt.Errorf("collector failed", "error", err, "url", r.Request.URL)
